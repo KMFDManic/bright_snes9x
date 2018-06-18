@@ -165,12 +165,12 @@ void retro_set_environment(retro_environment_t cb)
       // These variable names and possible values constitute an ABI with ZMZ (ZSNES Libretro player).
       // Changing "Show layer 1" is fine, but don't change "layer_1"/etc or the possible values ("Yes|No").
       // Adding more variables and rearranging them is safe.
-      { "snes9x_up_down_allowed", "Allow Opposing Directions; disabled|enabled" },
-      { "snes9x_hires_blend", "Hires Blending; disabled|enabled" },
-      { "snes9x_overclock_superfx", "SuperFX Overclocking; 100%|150%|200%|250%|300%|350%|400%|450%|500%|50%" },
-      { "snes9x_overclock_cycles", "Reduce Slowdown (Hack, Unsafe); disabled|compatible|max" },
-      { "snes9x_reduce_sprite_flicker", "Reduce Flickering (Hack, Unsafe); disabled|enabled" },
-      { "snes9x_randomize_memory", "Randomize Memory (Unsafe); disabled|enabled" },
+      { "snes9x_up_down_allowed", "Allow opposing directions; disabled|enabled" },
+      { "snes9x_hires_blend", "Hires blending; disabled|enabled" },
+      { "snes9x_overclock_superfx", "SuperFX overclocking; 100%|150%|200%|250%|300%|350%|400%|450%|500%|50%" },
+      { "snes9x_overclock_cycles", "Reduce slowdown (Unsafe); disabled|compatible|max" },
+      { "snes9x_reduce_sprite_flicker", "Reduce flickering (Unsafe); disabled|enabled" },
+      { "snes9x_randomize_memory", "Randomize memory (Unsafe); disabled|enabled" },
       { "snes9x_audio_interpolation", "Audio interpolation; gaussian|cubic|sinc|4-tap (custom)|8-tap (custom)|none|linear" },
       { "snes9x_layer_1", "Show layer 1; enabled|disabled" },
       { "snes9x_layer_2", "Show layer 2; enabled|disabled" },
@@ -189,7 +189,7 @@ void retro_set_environment(retro_environment_t cb)
       { "snes9x_sndchan_7", "Enable sound channel 7; enabled|disabled" },
       { "snes9x_sndchan_8", "Enable sound channel 8; enabled|disabled" },
       { "snes9x_vram_block", "Block invalid VRAM access (Unsafe); enabled|disabled" },
-      { "snes9x_stereo", "Audio output mode; 16-bit stereo|16-bit mono|8-bit stereo|8-bit mono|mute" },
+      { "snes9x_speakers", "Audio output mode; 16-bit stereo|16-bit mono|8-bit stereo|8-bit mono|mute" },
       { "snes9x_overscan", "Crop overscan; auto|enabled|disabled" },
       { "snes9x_aspect", "Preferred aspect ratio; auto|ntsc|pal|4:3" },
       { "snes9x_region", "Console region; auto|japan - usa|europe" },
@@ -392,9 +392,9 @@ static void update_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "enabled") == 0)
-				 Settings.BlockInvalidVRAMAccessMaster = true;
+				 Settings.BlockInvalidVRAMAccess = true;
       else if (strcmp(var.value, "disabled") == 0)
-				 Settings.BlockInvalidVRAMAccessMaster = false;
+				 Settings.BlockInvalidVRAMAccess = false;
    }
 
 	 int disabled_channels=0;
@@ -433,7 +433,7 @@ static void update_variables(void)
    var.value=NULL;
    Settings.SupportHiRes=!(environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && !strcmp("disabled", var.value));
 
-   var.key = "snes9x_stereo";
+   var.key = "snes9x_speakers";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
@@ -995,6 +995,8 @@ void retro_load_init_reset()
       lufia2_credits_hack = true;
    }
 
+	 // re-apply settings
+	 update_variables();
    update_geometry();
    
    if(randomize_memory)
@@ -2238,7 +2240,7 @@ int libretro_snes_interp(void *ptr)
    switch(audio_interp_mode) {
       // none
       case 0:
-         out = v->buf [(v->interp_pos >> 12) + v->buf_pos] & ~1;
+         out = v->buf [(v->interp_pos >> 12) + v->buf_pos];
          break;
 
       // linear
