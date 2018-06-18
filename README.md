@@ -12,6 +12,6 @@ changelog:
 - change core name to Snes9x Bright
 
 install:
-download Retroarch from www.libretro.com
-copy bright_snes9x to main Retroarch -- cores + system folders
-load core, load content, play
+- download Retroarch from www.libretro.com
+- copy bright_snes9x to main Retroarch -- cores + system folders
+- load core, load content, play
