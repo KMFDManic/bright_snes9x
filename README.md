@@ -7,6 +7,5 @@ changelog:
 - speakers mode: 16-bit stereo/mono, 8-bit stereo/mono, mute
 - console region: auto, japan-usa, europe
 - block vram access: enabled, disabled (bad hacks, 60hz pal games, debugging)
-- interpolation: 4-tap (4096 gaussian + no brr overflow), 8-tap (4096 sinc)
-  default gaussian has brr overflow error
+- interpolation: 4-tap (4096 gaussian + no brr overflow), 8-tap (4096 sinc). default gaussian has brr overflow error
 - backport game fixes (Top Gear 3000, Dragon Ball Z: Super Butouden 2, Umihara Kawase)
