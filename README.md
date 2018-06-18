@@ -14,4 +14,5 @@ changelog:
 install:
 - download Retroarch from www.libretro.com
 - copy bright_snes9x to main Retroarch -- cores + system folders
-- load core, load content, play
+- load core, load content
+- change options and play! modify settings as needed
