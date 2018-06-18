@@ -16,5 +16,11 @@ changelog:
 install:
 - download Retroarch from www.libretro.com
 - copy bright_snes9x to main Retroarch -- cores + system folders
-- load core, load content
-- change options and play! modify settings as needed
+- load core, load content, run
+- now change options and play! modify settings as needed
+
+
+notes:
+- 4096 point interpolation will sound very similar to mudlord's 256 ones. Because he's that good at using small tables to make high quality. But for imaginary phantom audio benefits, 4/8-tap custom is the way to go!
+
+- Block vram access off. This is useful for playing Europe in ntsc mode. Like Marko's Magic Football with copier protection disabled. Possibly Lucky Luke. World Masters Golf. And smoothing out some others. Or (old) translation hacks that don't work on real hardware. Plus newer hacks can abuse this feature and give lots of illegal speedup! And notably, this option breaks Hook gameplay.
