@@ -1,6 +1,6 @@
 # bright_snes9x - libretro
 
-sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) - ideally not recommended for upstream core inclusion (seriously)
+sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) - ideally not recommended for upstream core inclusion (seriously, it's going to be messy!)
 
 
 dropoff2:
