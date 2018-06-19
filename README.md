@@ -3,11 +3,19 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (just for fun only!!) - not recommended for upstream core inclusion (seriously)
 
 
-changelog:
+dropoff2:
+- backport blargg ntsc filters: disabled, monochrome, rf, composite, s-video, rgb
+- dsp-1 chipset: rev 1b, rev 1(a) (pilotwings light plane demo)
+- interlace speed: auto (lufia 2 credits), slow, fast
+- use special game hacks: enabled, disabled (emu testing)
+- inline mudlord interpolation (small speedup)
+
+
+dropoff1:
 - re-apply settings on loadstate and post-init (sound channels, show layers, misc)
 - speakers mode: 16-bit stereo/mono, 8-bit stereo/mono, mute
 - console region: auto, japan-usa (ntsc), europe (pal)
-- block vram access: enabled, disabled (bad hacks, 60hz pal games, debugging)
+- allow invalid vram access: disabled, enabled (bad hacks, 60hz pal games, debugging)
 - interpolation: 4-tap (4096 gaussian + no brr overflow), 8-tap (4096 sinc). default gaussian has brr overflow hardware error
 - backport game fixes (Top Gear 3000, Dragon Ball Z: Super Butouden 2, Final Fantasy 6)
 - change core name to Snes9x Bright
