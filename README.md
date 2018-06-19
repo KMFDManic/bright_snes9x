@@ -35,4 +35,4 @@ notes:
 
 - if you actually enjoy using this win32 snes9x port, then erm. Thanks! And it's alright if you don't like/want/accept/use any of these features. They are leftovers and not intended for mainstream libretro community consumption.
 
-- there's a rough chance of dropoff3 coming out. But there's honestly not much left to be added.
+- there's a rough chance of dropoff3 coming out. But there's honestly not much left to be added. Interest is naturally low. Likely almost no one will find out about this build and I can keep it a secret!
