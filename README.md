@@ -1,6 +1,6 @@
 # bright_snes9x - libretro
 
-sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (just for fun only!!) - not recommended for upstream core inclusion (seriously)
+sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) - ideally not recommended for upstream core inclusion (seriously)
 
 
 dropoff2:
@@ -12,7 +12,7 @@ dropoff2:
 
 
 dropoff1:
-- re-apply settings on loadstate and post-init (sound channels, show layers, misc)
+- apply settings on boot and loadstate (sound channels, layers, misc)
 - speakers mode: 16-bit stereo/mono, 8-bit stereo/mono, mute
 - console region: auto, japan-usa (ntsc), europe (pal)
 - allow invalid vram access: disabled, enabled (bad hacks, 60hz pal games, debugging)
@@ -29,6 +29,6 @@ install:
 
 
 notes:
-- 4096 point interpolation will sound very similar to mudlord's 256 ones. Because he's that good at using small tables to make high quality. But for imaginary phantom audio benefits, 4/8-tap custom is the way to go!
+- 4096 point interpolation will sound very similar to mudlord's 256 ones. Because Brad Miller is that good at using small tables to make high quality output. But for imaginary phantom audio benefits, 4/8-tap custom is the way to go!
 
-- Block vram access off. This is useful for playing Europe in ntsc mode. Like Marko's Magic Football with copier protection disabled. Possibly Lucky Luke. World Masters Golf. And smoothing out some others. Or (old) translation hacks that don't work on real hardware. Plus newer hacks can abuse this feature and give lots of illegal speedup! And notably, this option breaks Hook gameplay.
+- allow invalid vram access. This is useful for playing Europe in ntsc mode. Like Marko's Magic Football with copier protection disabled. Possibly Lucky Luke. World Masters Golf. And smoothing out some others. Or (old) translation hacks that don't work on real hardware. Plus newer hacks can abuse this feature and give lots of illegal speedup! And notably, this option breaks Hook gameplay.
