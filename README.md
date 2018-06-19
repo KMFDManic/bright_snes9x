@@ -32,3 +32,7 @@ notes:
 - 4096 point interpolation will sound very similar to mudlord's 256 ones. Because Brad Miller is that good at using small tables to make high quality output. But for imaginary phantom audio benefits, 4/8-tap custom is the way to go!
 
 - allow invalid vram access. This is useful for playing Europe in ntsc mode. Like Marko's Magic Football with copier protection disabled. Possibly Lucky Luke. World Masters Golf. And smoothing out some others. Or (old) translation hacks that don't work on real hardware. Plus newer hacks can abuse this feature and give lots of illegal speedup! And notably, this option breaks Hook gameplay.
+
+- if you actually enjoy using this win32 snes9x port, then erm. Thanks! And it's alright if you don't like/want/accept/use any of these features. They are leftovers and not intended for mainstream libretro community consumption.
+
+- there's a rough chance of dropoff3 coming out. But there's honestly not much left to be added.
