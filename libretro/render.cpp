@@ -269,7 +269,7 @@ void RenderBlarggNTSCRgb(uint16 *src, int srcpitch, uint16 *dst, int dstpitch, i
 }
 
 #define AVERAGE_565(el0, el1) (((el0) & (el1)) + ((((el0) ^ (el1)) & 0xF7DE) >> 1))
-void RenderMergeHires(void *src, int srcPitch , void* dst, int dstPitch, unsigned int width, unsigned int height)
+void RenderMergeHires(void *src, int srcPitch , void* dst, int dstPitch, unsigned int width, unsigned int height, int mode)
 {
 	for (register int y = 0; y < height; y++)
 	{
@@ -277,16 +277,40 @@ void RenderMergeHires(void *src, int srcPitch , void* dst, int dstPitch, unsigne
 		register uint16 *output = (uint16 *) ((uint8 *) dst + y * dstPitch);
 		register uint16 l, r;
 
-		l = 0;
-		for (register int x = 0; x < (width >> 1); x++)
+		if (mode == 1)
 		{
-			r = *input++;
-			*output++ = AVERAGE_565 (l, r);
-			l = r;
+			for (register int x = 0; x < (width >> 1); x++)
+			{
+				l = *input++;
+				r = *input++;
 
-			r = *input++;
-			*output++ = AVERAGE_565 (l, r);
-			l = r;
+				*output++ = AVERAGE_565 (l, r);
+				*output++ = AVERAGE_565 (l, r);
+			}
+		}
+		else if (mode == 2)
+		{
+			l = 0;
+			for (register int x = 0; x < (width >> 1); x++)
+			{
+				r = *input++;
+				*output++ = AVERAGE_565 (l, r);
+				l = r;
+
+				r = *input++;
+				*output++ = AVERAGE_565 (l, r);
+				l = r;
+			}
+		}
+		else if (mode == 3)
+		{
+			for (register int x = 0; x < (width >> 1); x++)
+			{
+				l = *input++;
+				r = *input++;
+
+				*output++ = AVERAGE_565 (l, r);
+			}
 		}
 	}
 

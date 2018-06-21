@@ -50,7 +50,7 @@ char g_basename[1024];
 char retro_system_directory[4096];
 char retro_save_directory[4096];
 
-bool hires_blend = false;
+int hires_blend = 0;
 bool overclock_cycles = false;
 bool reduce_sprite_flicker = false;
 bool randomize_memory = false;
@@ -74,6 +74,9 @@ static uint8 audio_interp_custom[0x10000];
 static int blargg_filter = 0;
 int dsp1_chipset = 1;
 static bool interlace_speed = 0;
+static int runahead_speed = 0;
+static bool ignore_bios = false;
+static bool special_hires_game = false;
 
 #include "render.cpp"
 #include "mudlord.cpp"
@@ -177,7 +180,7 @@ void retro_set_environment(retro_environment_t cb)
       // Adding more variables and rearranging them is safe.
       { "snes9x_up_down_allowed", "Allow opposing directions; disabled|enabled" },
       { "snes9x_blargg", "Blargg NTSC filter; disabled|monochrome|rf|composite|s-video|rgb" },
-      { "snes9x_hires_blend", "Hires blending; disabled|enabled" },
+      { "snes9x_hires_blend", "Hires blending; disabled|half|full|special" },
       { "snes9x_overclock_superfx", "SuperFX overclocking; 100%|150%|200%|250%|300%|350%|400%|450%|500%|50%" },
       { "snes9x_overclock_cycles", "Reduce slowdown (Unsafe); disabled|compatible|max" },
       { "snes9x_reduce_sprite_flicker", "Reduce flickering (Unsafe); disabled|enabled" },
@@ -207,6 +210,8 @@ void retro_set_environment(retro_environment_t cb)
       { "snes9x_overscan", "Crop overscan; auto|enabled|disabled" },
       { "snes9x_aspect", "Preferred aspect ratio; auto|ntsc|pal|4:3" },
       { "snes9x_region", "Console region; auto|japan, usa|europe" },
+      { "snes9x_runahead", "Internal runahead; disabled|1|2|3|4|5|6|7|8|9|10" },
+      { "snes9x_ignore_bios", "Ignore using BIOS; disabled|enabled" },
       { "snes9x_macsrifle_adjust_x", "M.A.C.S. Rifle - adjust aim x; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|-25|-24|-23|-22|-21|-20|-19|-18|-17|-16|-15|-14|-13|-12|-11|-10|-9|-8|-7|-6|-5|-4|-3|-2|-1" },
       { "snes9x_macsrifle_adjust_y", "M.A.C.S. Rifle - adjust aim y; 0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|-25|-24|-23|-22|-21|-20|-19|-18|-17|-16|-15|-14|-13|-12|-11|-10|-9|-8|-7|-6|-5|-4|-3|-2|-1" },
       {},
@@ -257,7 +262,16 @@ static void update_variables(void)
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
-      hires_blend = !strcmp(var.value, "disabled") ? false : true;
+	 {
+      if (strcmp(var.value, "disabled") == 0)
+				hires_blend = 0;
+      else if (strcmp(var.value, "half") == 0)
+				hires_blend = 1;
+      else if (strcmp(var.value, "full") == 0)
+				hires_blend = 2;
+      else if (strcmp(var.value, "special") == 0)
+				hires_blend = 3;
+	 }
    else
       hires_blend = false;
 
@@ -580,6 +594,45 @@ static void update_variables(void)
       else if (strcmp(var.value, "fast") == 0)
 				 interlace_speed = 2;
    }
+
+   var.key = "snes9x_runahead";
+   var.value = NULL;
+
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "disabled") == 0)
+				 runahead_speed = 0;
+      else if (strcmp(var.value, "1") == 0)
+				 runahead_speed = 1;
+      else if (strcmp(var.value, "2") == 0)
+				 runahead_speed = 2;
+      else if (strcmp(var.value, "3") == 0)
+				 runahead_speed = 3;
+      else if (strcmp(var.value, "4") == 0)
+				 runahead_speed = 4;
+      else if (strcmp(var.value, "5") == 0)
+				 runahead_speed = 5;
+      else if (strcmp(var.value, "6") == 0)
+				 runahead_speed = 6;
+      else if (strcmp(var.value, "7") == 0)
+				 runahead_speed = 7;
+      else if (strcmp(var.value, "8") == 0)
+				 runahead_speed = 8;
+      else if (strcmp(var.value, "9") == 0)
+				 runahead_speed = 9;
+      else if (strcmp(var.value, "10") == 0)
+				 runahead_speed = 10;
+   }
+
+   var.key="snes9x_ignore_bios";
+   var.value=NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+	 {
+      if (strcmp(var.value, "disabled") == 0)
+         ignore_bios = false;
+      else if (strcmp(var.value, "enabled") == 0)
+         ignore_bios = true;
+	 }
 
    if (geometry_update)
       update_geometry();
@@ -995,7 +1048,7 @@ static bool LoadBIOS(uint8 *biosrom, const char *biosname, size_t biossize)
       fseek(fp,0,SEEK_END);
       size = ftell(fp);
 
-      if (size + 0x200 == biossize)
+      if (size == biossize+0x200)
         fseek(fp,0x200,SEEK_SET);
       else
         fseek(fp,0,SEEK_SET);
@@ -1049,15 +1102,25 @@ void retro_load_init_reset()
    }
 
    lufia2_credits_hack = false;
-   if (Memory.match_id("E9ANIE") ||
-       Memory.match_id("01ANIP") ||
-       Memory.match_id("C0ANIJ") ||
-       Memory.match_id("01ANIS") ||
-       Memory.match_id("01ANIH") ||
-       Memory.match_id("01ANID")
+   if (Memory.match_id("ANIE") ||
+		   Memory.match_id("ANIP") ||
+			 Memory.match_id("ANID") ||
+			 Memory.match_id("ANIH") ||
+       Memory.match_id("ANIS") ||
+       Memory.match_id("ANIJ")
       )
    {
       lufia2_credits_hack = true;
+   }
+
+	 special_hires_game = false;
+   if (Memory.match_id("AFJE") ||		// Kirby's Dream Land 3
+			 Memory.match_id("AFJJ") ||		// Hoshi no Kirby 3
+       Memory.match_nn("JURASSIC PARK") ||
+       Memory.match_nn("SFC SAILORMOON S")		// Bishoujo Senshi Sailor Moon S - Kondo wa Puzzle de Oshioki yo!
+      )
+   {
+      special_hires_game = true;
    }
 
 	 // re-apply settings
@@ -1097,7 +1160,7 @@ bool retro_load_game(const struct retro_game_info *game)
          extract_directory(g_rom_dir, game->path, sizeof(g_rom_dir));
       }
 
-      if (is_SufamiTurbo_Cart(romptr,romsize)) {
+      if (!ignore_bios && is_SufamiTurbo_Cart(romptr,romsize)) {
           uint8 *biosrom = new uint8[0x40000];
           uint8 *biosptr = biosrom;
 
@@ -1107,11 +1170,14 @@ bool retro_load_game(const struct retro_game_info *game)
             rom_loaded = Memory.LoadMultiCartMem((const uint8_t*)romptr, romsize, 0, 0, biosptr, 0x40000);
          }
 
-         if(biosrom) delete[] biosrom;
+				 if (!rom_loaded)
+					 rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
+
+				 if(biosrom) delete[] biosrom;
       }
 
       else
-      if ((is_bsx((uint8 *) romptr+0x7fc0)==1) | (is_bsx((uint8 *) romptr+0xffc0)==1)) {
+      if (!ignore_bios && ((is_bsx((uint8 *) romptr+0x7fc0)==1) | (is_bsx((uint8 *) romptr+0xffc0)==1))) {
           uint8 *biosrom = new uint8[0x100000];
           uint8 *biosptr = biosrom;
 
@@ -1120,6 +1186,9 @@ bool retro_load_game(const struct retro_game_info *game)
 
             rom_loaded = Memory.LoadMultiCartMem(biosptr, 0x100000, (const uint8_t*)romptr, romsize, 0, 0);
          }
+
+				 if (!rom_loaded)
+					 rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
 
          if(biosrom) delete[] biosrom;
       }
@@ -1176,7 +1245,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
       case RETRO_GAME_TYPE_BSX_SLOTTED:
       case RETRO_GAME_TYPE_MULTI_CART:
          if(num_info == 2) {
-            if (is_SufamiTurbo_Cart((const uint8_t*)romptr[0], romsize[0])) {
+            if (!ignore_bios && is_SufamiTurbo_Cart((const uint8_t*)romptr[0], romsize[0])) {
                 uint8 *biosrom = new uint8[0x40000];
                 uint8 *biosptr = biosrom;
 
@@ -1186,6 +1255,10 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
                   rom_loaded = Memory.LoadMultiCartMem((const uint8_t*)romptr[0], romsize[0],
                                (const uint8_t*)romptr[1], romsize[1], biosptr, 0x40000);
                }
+
+							 if (!rom_loaded)
+                  rom_loaded = Memory.LoadMultiCartMem((const uint8_t*)romptr[0], romsize[0],
+                               (const uint8_t*)romptr[1], romsize[1], NULL, 0);
 
                if (biosrom) delete[] biosrom;
             }
@@ -1542,6 +1615,9 @@ static void report_buttons()
    }
 }
 
+static uint8 savebuf[0x200000];
+static size_t savesize = 0;
+
 void retro_run()
 {
    //sanity check to prevent infinite loop inside emulator
@@ -1567,6 +1643,8 @@ void retro_run()
       IPPU.RenderThisFrame = videoEnabled;
       S9xSetSoundMute(!audioEnabled || hardDisableAudio);
       Settings.HardDisableAudio = hardDisableAudio;
+
+	    if(runahead_speed && (audioEnabled==0 || videoEnabled==0 || hardDisableAudio!=0)) return;
    }
    else
    {
@@ -1575,10 +1653,49 @@ void retro_run()
       Settings.HardDisableAudio = false;
    }
 
-   poll_cb();
-   report_buttons();
-   S9xMainLoop();
-   S9xAudioCallback(NULL);
+	 if(runahead_speed==0)
+	    savesize=0;
+
+	 if(savesize)
+	 {
+		 // 2nd frame
+		 Settings.FastSavestates = true;
+		 S9xUnfreezeGameMem((const uint8_t*)savebuf,savesize);
+		 Settings.FastSavestates = false;
+
+		 poll_cb();
+		 report_buttons();
+
+  	 IPPU.RenderThisFrame = false;
+		 S9xSetSoundMute(true);
+	   
+	   S9xMainLoop();
+	   S9xAudioCallback(NULL);
+		 S9xFreezeGameMem((uint8_t*)savebuf,savesize);
+
+		 for(int lcv=1; lcv<runahead_speed; lcv++)
+		 {
+		   S9xMainLoop();
+		   S9xAudioCallback(NULL);
+		 }
+	 }
+	 else
+	 {
+		 // 1st frame
+		 savesize = S9xFreezeSize();
+
+		 poll_cb();
+     report_buttons();
+
+		 S9xFreezeGameMem((uint8_t*)savebuf,savesize);
+	 }
+
+
+ 	 IPPU.RenderThisFrame = true;
+   S9xSetSoundMute(false);
+
+	 S9xMainLoop();
+	 S9xAudioCallback(NULL);
 }
 
 void retro_deinit()
@@ -1678,7 +1795,11 @@ bool retro_serialize(void *data, size_t size)
    {
       Settings.FastSavestates = 0 != (result & 4);
    }
-   if (S9xFreezeGameMem((uint8_t*)data,size) == FALSE)
+
+	 if(runahead_speed && Settings.FastSavestates)
+		  return true;
+
+	 if (S9xFreezeGameMem((uint8_t*)data,size) == FALSE)
       return false;
 
    return true;
@@ -1694,10 +1815,17 @@ bool retro_unserialize(const void* data, size_t size)
       Settings.FastSavestates = 0 != (result & 4);
 			if (Settings.FastSavestates == 0) update_variables();
    }
+
+	 if(runahead_speed && Settings.FastSavestates)
+		  return true;
+
    if (S9xUnfreezeGameMem((const uint8_t*)data,size) != SUCCESS)
       return false;
 
-   return true;
+	// reset runahead
+  savesize = 0;
+
+	return true;
 }
 
 bool8 S9xDeinitUpdate(int width, int height)
@@ -1750,8 +1878,17 @@ bool8 S9xDeinitUpdate(int width, int height)
 	 }
 	 else if(width==MAX_SNES_WIDTH && hires_blend)
    {
-		  RenderMergeHires(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-      video_cb(gfx_blend, width, height, GFX.Pitch);
+		  if (hires_blend==3 && !special_hires_game)
+				video_cb(GFX.Screen, width, height, GFX.Pitch);
+			else
+			{
+		     RenderMergeHires(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height, hires_blend);
+
+			   if (hires_blend==3)
+				    video_cb(gfx_blend, width/2, height, GFX.Pitch);
+			   else
+				    video_cb(gfx_blend, width, height, GFX.Pitch);
+			}
    }
    else
    { 
