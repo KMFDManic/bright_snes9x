@@ -1,6 +1,6 @@
 # bright_snes9x - libretro
 
-sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) - ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
+sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
 dropoff3:
@@ -44,15 +44,8 @@ notes:
 
 - if you actually enjoy using this win32 snes9x port, then erm. Thanks! And it's alright if you don't like/want/accept/use any of these features. They are leftovers and not intended for mainstream libretro community consumption.
 
-- internal runahead feature. runs faster.
-
-  Kirby's Dream Land 3
-  0: 188
-  1: 93 (frontend) ==> 104 (secondary) ==> 121 (internal)
+- internal runahead feature. runs faster. Kirby's Dream Land 3 ## 0: 188 ## 1: 93 (frontend) ==> 104 (secondary) ==> 121 (internal)
   
-- hires blending special activates custom blending only for these games. extra compatible with lores scalers.
-  Bishoujo Senshi Sailor Moon S - Kondo wa Puzzle de Oshioki yo!
-  Kirby's Dream Land 3 / Hoshi no Kirby 3
-  Jurassic Park
+- hires blending special activates custom blending only for these games. extra compatible with lores scalers. Bishoujo Senshi Sailor Moon S - Kondo wa Puzzle de Oshioki yo, Kirby's Dream Land 3 / Hoshi no Kirby 3, Jurassic Park
 
 - there's a rough chance of dropoff4 coming out. But there's honestly not much left to be added. Interest is naturally low. Likely almost no one will find out about this build and I can keep it a secret!
