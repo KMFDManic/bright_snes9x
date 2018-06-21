@@ -3,7 +3,7 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
-dropoff3:
+dropoff 3:
 - internal runahead feature (good speedup)
 - hires blending: disabled, half, full, special
 - fix Lufia 2 interlace game id detection
@@ -12,7 +12,7 @@ dropoff3:
 - backport Little Magic smp fix
 
 
-dropoff2:
+dropoff 2:
 - backport blargg ntsc filters: disabled, monochrome, rf, composite, s-video, rgb
 - dsp-1 chipset: rev 1b, rev 1(a) (pilotwings light plane demo)
 - interlace speed: auto (lufia 2 credits), slow, fast
@@ -20,7 +20,7 @@ dropoff2:
 - inline mudlord interpolation (small speedup)
 
 
-dropoff1:
+dropoff 1:
 - apply settings on boot and loadstate (sound channels, layers, misc)
 - speakers mode: 16-bit stereo/mono, 8-bit stereo/mono, mute
 - console region: auto, japan-usa (ntsc), europe (pal)
