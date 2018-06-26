@@ -66,6 +66,8 @@ static retro_input_state_t input_state_cb = NULL;
 
 static bool lufia2_credits_hack = false;
 static uint16 *gfx_blend;
+static uint16 *gfx_copy;
+static int gfx_copy_width, gfx_copy_height;
 
 static int audio_interp_max = 32768;
 static int audio_interp_mode = 2;
@@ -73,10 +75,14 @@ static uint8 audio_interp_custom[0x10000];
 
 static int blargg_filter = 0;
 int dsp1_chipset = 1;
-static bool interlace_speed = 0;
+static int interlace_speed = 0;
 static int runahead_speed = 0;
 static bool ignore_bios = false;
 static bool special_hires_game = false;
+static int runahead_skip = 0;
+
+int runahead_interlace;
+int runahead_interlace_frame;
 
 #include "render.cpp"
 #include "mudlord.cpp"
@@ -205,7 +211,7 @@ void retro_set_environment(retro_environment_t cb)
       { "snes9x_dsp1_chipset", "DSP-1 chipset; revision 1b|revision 1(a)" },
       { "snes9x_vram_allow", "Allow invalid VRAM access (Unsafe); disabled|enabled" },
       { "snes9x_special_hacks", "Use special game hacks; enabled|disabled" },
-      { "snes9x_interlace", "Interlace speed; auto|slow|fast" },
+      { "snes9x_interlace", "Show interlace frames; auto|even|odd|both" },
       { "snes9x_speakers", "Audio output mode; 16-bit stereo|mute|8-bit mono|8-bit stereo|16-bit mono" },
       { "snes9x_overscan", "Crop overscan; auto|enabled|disabled" },
       { "snes9x_aspect", "Preferred aspect ratio; auto|ntsc|pal|4:3" },
@@ -262,16 +268,16 @@ static void update_variables(void)
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var))
-	 {
+   {
       if (strcmp(var.value, "disabled") == 0)
-				hires_blend = 0;
+        hires_blend = 0;
       else if (strcmp(var.value, "half") == 0)
-				hires_blend = 1;
+        hires_blend = 1;
       else if (strcmp(var.value, "full") == 0)
-				hires_blend = 2;
+        hires_blend = 2;
       else if (strcmp(var.value, "special") == 0)
-				hires_blend = 3;
-	 }
+        hires_blend = 3;
+   }
    else
       hires_blend = false;
 
@@ -388,11 +394,11 @@ static void update_variables(void)
          }
       }
 
-			if (oldval != audio_interp_mode)
+      if (oldval != audio_interp_mode)
          audio_interp_max = 32768;
    }
 
-	 int disabled_channels=0;
+   int disabled_channels=0;
    strcpy(key, "snes9x_sndchan_x");
    var.key=key;
    for (int i=0;i<8;i++)
@@ -480,20 +486,20 @@ static void update_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "auto") == 0)
-			{
-				 Settings.ForceNTSC = false;
-				 Settings.ForcePAL = false;
-			}
+      {
+         Settings.ForceNTSC = false;
+         Settings.ForcePAL = false;
+      }
       else if (strcmp(var.value, "japan, usa") == 0)
-			{
-				 Settings.ForceNTSC = true;
-				 Settings.ForcePAL = false;
-			}
+      {
+         Settings.ForceNTSC = true;
+         Settings.ForcePAL = false;
+      }
       else if (strcmp(var.value, "europe") == 0)
-			{
-				 Settings.ForceNTSC = false;
-				 Settings.ForcePAL = true;
-			}
+      {
+         Settings.ForceNTSC = false;
+         Settings.ForcePAL = true;
+      }
    }
 
    var.key = "snes9x_speakers";
@@ -502,35 +508,35 @@ static void update_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "16-bit stereo") == 0)
-			{
-				 Settings.SixteenBitSound = true;
-				 Settings.Stereo = true;
-				 Settings.Mute = false;
-			}
+      {
+         Settings.SixteenBitSound = true;
+         Settings.Stereo = true;
+         Settings.Mute = false;
+      }
       else if (strcmp(var.value, "16-bit mono") == 0)
-			{
-				 Settings.SixteenBitSound = true;
-				 Settings.Stereo = false;
-				 Settings.Mute = false;
-			}
+      {
+         Settings.SixteenBitSound = true;
+         Settings.Stereo = false;
+         Settings.Mute = false;
+      }
       if (strcmp(var.value, "8-bit stereo") == 0)
-			{
-				 Settings.SixteenBitSound = false;
-				 Settings.Stereo = true;
-				 Settings.Mute = false;
-			}
+      {
+         Settings.SixteenBitSound = false;
+         Settings.Stereo = true;
+         Settings.Mute = false;
+      }
       else if (strcmp(var.value, "8-bit mono") == 0)
-			{
-				 Settings.SixteenBitSound = false;
-				 Settings.Stereo = false;
-				 Settings.Mute = false;
-			}
+      {
+         Settings.SixteenBitSound = false;
+         Settings.Stereo = false;
+         Settings.Mute = false;
+      }
       else if (strcmp(var.value, "mute") == 0)
-			{
-				 Settings.SixteenBitSound = false;
-				 Settings.Stereo = false;
-				 Settings.Mute = true;
-			}
+      {
+         Settings.SixteenBitSound = false;
+         Settings.Stereo = false;
+         Settings.Mute = true;
+      }
    }
 
    var.key = "snes9x_vram_allow";
@@ -539,15 +545,15 @@ static void update_variables(void)
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (strcmp(var.value, "disabled") == 0)
-				 Settings.BlockInvalidVRAMAccess = true;
+         Settings.BlockInvalidVRAMAccess = true;
       else if (strcmp(var.value, "enabled") == 0)
-				 Settings.BlockInvalidVRAMAccess = false;
+         Settings.BlockInvalidVRAMAccess = false;
    }
 
    var.key="snes9x_blargg";
    var.value=NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-	 {
+   {
       if (strcmp(var.value, "disabled") == 0)
          blargg_filter = 0;
       else if (strcmp(var.value, "monochrome") == 0)
@@ -560,39 +566,43 @@ static void update_variables(void)
          blargg_filter = 4;
       else if (strcmp(var.value, "rgb") == 0)
          blargg_filter = 5;
-	 }
+   }
 
    var.key="snes9x_special_hacks";
    var.value=NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-	 {
+   {
       if (strcmp(var.value, "enabled") == 0)
          Settings.DisableGameSpecificHacks = false;
       else if (strcmp(var.value, "disabled") == 0)
          Settings.DisableGameSpecificHacks = true;
-	 }
+   }
 
    var.key="snes9x_dsp1_chipset";
    var.value=NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-	 {
+   {
       if (strcmp(var.value, "revision 1b") == 0)
          dsp1_chipset = 1;
       else if (strcmp(var.value, "revision 1(a)") == 0)
          dsp1_chipset = 0;
-	 }
+   }
 
    var.key = "snes9x_interlace";
    var.value = NULL;
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
+     if(log_cb) log_cb(RETRO_LOG_ERROR,"interlace speed = %s\n",var.value);
+
       if (strcmp(var.value, "auto") == 0)
-				 interlace_speed = 0;
-      else if (strcmp(var.value, "slow") == 0)
-				 interlace_speed = 1;
-      else if (strcmp(var.value, "fast") == 0)
-				 interlace_speed = 2;
+         interlace_speed = 0;
+      else if (strcmp(var.value, "even") == 0)
+         interlace_speed = 1;
+      else if (strcmp(var.value, "odd") == 0)
+         interlace_speed = 2;
+      else if (strcmp(var.value, "both") == 0)
+         interlace_speed = 3;
    }
 
    var.key = "snes9x_runahead";
@@ -600,39 +610,44 @@ static void update_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
+      int old_runahead = runahead_speed;
+
       if (strcmp(var.value, "disabled") == 0)
-				 runahead_speed = 0;
+         runahead_speed = 0;
       else if (strcmp(var.value, "1") == 0)
-				 runahead_speed = 1;
+         runahead_speed = 1;
       else if (strcmp(var.value, "2") == 0)
-				 runahead_speed = 2;
+         runahead_speed = 2;
       else if (strcmp(var.value, "3") == 0)
-				 runahead_speed = 3;
+         runahead_speed = 3;
       else if (strcmp(var.value, "4") == 0)
-				 runahead_speed = 4;
+         runahead_speed = 4;
       else if (strcmp(var.value, "5") == 0)
-				 runahead_speed = 5;
+         runahead_speed = 5;
       else if (strcmp(var.value, "6") == 0)
-				 runahead_speed = 6;
+         runahead_speed = 6;
       else if (strcmp(var.value, "7") == 0)
-				 runahead_speed = 7;
+         runahead_speed = 7;
       else if (strcmp(var.value, "8") == 0)
-				 runahead_speed = 8;
+         runahead_speed = 8;
       else if (strcmp(var.value, "9") == 0)
-				 runahead_speed = 9;
+         runahead_speed = 9;
       else if (strcmp(var.value, "10") == 0)
-				 runahead_speed = 10;
+         runahead_speed = 10;
+
+      if (old_runahead != runahead_speed)
+         runahead_skip = -runahead_speed;
    }
 
    var.key="snes9x_ignore_bios";
    var.value=NULL;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
-	 {
+   {
       if (strcmp(var.value, "disabled") == 0)
          ignore_bios = false;
       else if (strcmp(var.value, "enabled") == 0)
          ignore_bios = true;
-	 }
+   }
 
    if (geometry_update)
       update_geometry();
@@ -715,7 +730,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
 
    info->geometry.base_width = width;
    info->geometry.base_height = height;
-	 info->geometry.max_width = MAX_SNES_WIDTH_OUT;
+   info->geometry.max_width = MAX_SNES_WIDTH_OUT;
    info->geometry.max_height = MAX_SNES_HEIGHT;
    info->geometry.aspect_ratio = get_aspect_ratio(width, height);
    info->timing.sample_rate = 32040;
@@ -1103,9 +1118,9 @@ void retro_load_init_reset()
 
    lufia2_credits_hack = false;
    if (Memory.match_id("ANIE") ||
-		   Memory.match_id("ANIP") ||
-			 Memory.match_id("ANID") ||
-			 Memory.match_id("ANIH") ||
+       Memory.match_id("ANIP") ||
+       Memory.match_id("ANID") ||
+       Memory.match_id("ANIH") ||
        Memory.match_id("ANIS") ||
        Memory.match_id("ANIJ")
       )
@@ -1113,9 +1128,9 @@ void retro_load_init_reset()
       lufia2_credits_hack = true;
    }
 
-	 special_hires_game = false;
+   special_hires_game = false;
    if (Memory.match_id("AFJE") ||		// Kirby's Dream Land 3
-			 Memory.match_id("AFJJ") ||		// Hoshi no Kirby 3
+       Memory.match_id("AFJJ") ||		// Hoshi no Kirby 3
        Memory.match_nn("JURASSIC PARK") ||
        Memory.match_nn("SFC SAILORMOON S")		// Bishoujo Senshi Sailor Moon S - Kondo wa Puzzle de Oshioki yo!
       )
@@ -1123,8 +1138,8 @@ void retro_load_init_reset()
       special_hires_game = true;
    }
 
-	 // re-apply settings
-	 update_variables();
+   // re-apply settings
+   update_variables();
    update_geometry();
    
    if(randomize_memory)
@@ -1170,10 +1185,10 @@ bool retro_load_game(const struct retro_game_info *game)
             rom_loaded = Memory.LoadMultiCartMem((const uint8_t*)romptr, romsize, 0, 0, biosptr, 0x40000);
          }
 
-				 if (!rom_loaded)
-					 rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
+         if (!rom_loaded)
+           rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
 
-				 if(biosrom) delete[] biosrom;
+         if(biosrom) delete[] biosrom;
       }
 
       else
@@ -1187,8 +1202,25 @@ bool retro_load_game(const struct retro_game_info *game)
             rom_loaded = Memory.LoadMultiCartMem(biosptr, 0x100000, (const uint8_t*)romptr, romsize, 0, 0);
          }
 
-				 if (!rom_loaded)
-					 rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
+         if (!rom_loaded)
+         {
+            if(is_bsx((uint8 *) romptr+0x7fc0)==1) {
+              romptr[0x7fd5] = 0x30;
+              romptr[0x7fd6] = 0x02;
+              romptr[0x7fd7] = 0x0a;
+              romptr[0x7fd8] = 0x05;
+              romptr[0x7fd9] = 0x01;
+            }
+            else if(is_bsx((uint8 *) romptr+0xffc0)==1) {
+              romptr[0xffd5] = 0x31;
+              romptr[0xffd6] = 0x02;
+              romptr[0xffd7] = 0x0a;
+              romptr[0xffd8] = 0x05;
+              romptr[0xffd9] = 0x01;
+            }
+
+            rom_loaded = Memory.LoadROMMem((const uint8_t*)romptr, romsize);
+         }
 
          if(biosrom) delete[] biosrom;
       }
@@ -1256,7 +1288,7 @@ bool retro_load_game_special(unsigned game_type, const struct retro_game_info *i
                                (const uint8_t*)romptr[1], romsize[1], biosptr, 0x40000);
                }
 
-							 if (!rom_loaded)
+               if (!rom_loaded)
                   rom_loaded = Memory.LoadMultiCartMem((const uint8_t*)romptr[0], romsize[0],
                                (const uint8_t*)romptr[1], romsize[1], NULL, 0);
 
@@ -1388,6 +1420,7 @@ void retro_init(void)
    GFX.Pitch = MAX_SNES_WIDTH_OUT * sizeof(uint16);
    GFX.Screen = (uint16*) calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
    gfx_blend = (uint16*) calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
+   gfx_copy = (uint16*) calloc(1, GFX.Pitch * MAX_SNES_HEIGHT);
    S9xGraphicsInit();
 
    S9xInitInputDevices();
@@ -1625,8 +1658,9 @@ void retro_run()
 
    static uint16 height = PPU.ScreenHeight;
    bool updated = false;
-   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated) && updated)
-      update_variables();
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE, &updated)) {
+      if (updated) update_variables();
+   }
    if (height != PPU.ScreenHeight)
    {
       update_geometry();
@@ -1644,7 +1678,7 @@ void retro_run()
       S9xSetSoundMute(!audioEnabled || hardDisableAudio);
       Settings.HardDisableAudio = hardDisableAudio;
 
-	    if(runahead_speed && (audioEnabled==0 || videoEnabled==0 || hardDisableAudio!=0)) return;
+      if(runahead_speed && (audioEnabled==0 || videoEnabled==0 || hardDisableAudio!=0)) return;
    }
    else
    {
@@ -1653,49 +1687,71 @@ void retro_run()
       Settings.HardDisableAudio = false;
    }
 
-	 if(runahead_speed==0)
-	    savesize=0;
+   if(runahead_speed == 0)
+   {
+      poll_cb();
+      report_buttons();
 
-	 if(savesize)
-	 {
-		 // 2nd frame
-		 Settings.FastSavestates = true;
-		 S9xUnfreezeGameMem((const uint8_t*)savebuf,savesize);
-		 Settings.FastSavestates = false;
+      runahead_skip = 0;
+   }
+   else
+   {
+      if(runahead_skip >= 0)
+      {
+         // 2nd frame
+         Settings.FastSavestates = true;
+         S9xUnfreezeGameMem((const uint8_t*)savebuf,savesize);	 
+       
+         GFX.InterlaceFrame = Memory.FillRAM[0x213F]>>7;
+         //GFX.DoInterlace = runahead_interlace;
+       
+         Settings.FastSavestates = false;
+         runahead_skip = runahead_speed;
 
-		 poll_cb();
-		 report_buttons();
+         poll_cb();
+         report_buttons();
 
-  	 IPPU.RenderThisFrame = false;
-		 S9xSetSoundMute(true);
-	   
-	   S9xMainLoop();
-	   S9xAudioCallback(NULL);
-		 S9xFreezeGameMem((uint8_t*)savebuf,savesize);
+         IPPU.RenderThisFrame = false;
+         S9xSetSoundMute(true);
 
-		 for(int lcv=1; lcv<runahead_speed; lcv++)
-		 {
-		   S9xMainLoop();
-		   S9xAudioCallback(NULL);
-		 }
-	 }
-	 else
-	 {
-		 // 1st frame
-		 savesize = S9xFreezeSize();
-
-		 poll_cb();
-     report_buttons();
-
-		 S9xFreezeGameMem((uint8_t*)savebuf,savesize);
-	 }
+         S9xMainLoop();
+         S9xAudioCallback(NULL);
 
 
- 	 IPPU.RenderThisFrame = true;
+
+         S9xFreezeGameMem((uint8_t*)savebuf,savesize);
+
+         //runahead_interlace_frame = GFX.InterlaceFrame;
+         //runahead_interlace = GFX.DoInterlace;
+
+         while(--runahead_skip)
+         {
+            S9xMainLoop();
+            S9xAudioCallback(NULL);
+         }
+      }
+      else
+      {
+         // 1st frame
+         savesize = S9xFreezeSize();
+         runahead_skip++;
+
+         poll_cb();
+         report_buttons();
+
+
+         S9xFreezeGameMem((uint8_t*)savebuf,savesize);
+
+         runahead_interlace_frame = GFX.InterlaceFrame;
+         runahead_interlace = GFX.DoInterlace;
+      }
+   }
+
+   IPPU.RenderThisFrame = true;
    S9xSetSoundMute(false);
 
-	 S9xMainLoop();
-	 S9xAudioCallback(NULL);
+   S9xMainLoop();
+   S9xAudioCallback(NULL);
 }
 
 void retro_deinit()
@@ -1796,10 +1852,11 @@ bool retro_serialize(void *data, size_t size)
       Settings.FastSavestates = 0 != (result & 4);
    }
 
-	 if(runahead_speed && Settings.FastSavestates)
-		  return true;
 
-	 if (S9xFreezeGameMem((uint8_t*)data,size) == FALSE)
+   if(runahead_speed && Settings.FastSavestates)
+      return true;
+
+   if (S9xFreezeGameMem((uint8_t*)data,size) == FALSE)
       return false;
 
    return true;
@@ -1813,25 +1870,71 @@ bool retro_unserialize(const void* data, size_t size)
    if (okay)
    {
       Settings.FastSavestates = 0 != (result & 4);
-			if (Settings.FastSavestates == 0) update_variables();
    }
 
-	 if(runahead_speed && Settings.FastSavestates)
-		  return true;
+   if(runahead_speed && Settings.FastSavestates)
+      return true;
 
-   if (S9xUnfreezeGameMem((const uint8_t*)data,size) != SUCCESS)
+	 if (S9xUnfreezeGameMem((const uint8_t*)data,size) != SUCCESS)
       return false;
 
-	// reset runahead
-  savesize = 0;
+   if (Settings.FastSavestates == 0)
+   {
+      update_variables();
+      update_geometry();
 
-	return true;
+      memset(GFX.Screen,0,GFX.Pitch * MAX_SNES_HEIGHT);
+
+		  GFX.InterlaceFrame = Memory.FillRAM[0x213F]>>7;
+			if (!GFX.InterlaceFrame)
+				GFX.DoInterlace = 0;
+			else
+				GFX.DoInterlace = 1;
+
+			IPPU.MaxBrightness = PPU.Brightness;
+
+			IPPU.Interlace    = Memory.FillRAM[0x2133] & 1;
+			IPPU.InterlaceOBJ = Memory.FillRAM[0x2133] & 2;
+			IPPU.PseudoHires  = Memory.FillRAM[0x2133] & 8;
+
+			if (Settings.SupportHiRes && (PPU.BGMode == 5 || PPU.BGMode == 6 || IPPU.PseudoHires))
+			{
+				GFX.RealPPL = GFX.Pitch >> 1;
+				IPPU.DoubleWidthPixels = TRUE;
+				IPPU.RenderedScreenWidth = SNES_WIDTH << 1;
+			}
+			else
+			{
+				GFX.RealPPL = GFX.Pitch >> 1;
+				IPPU.DoubleWidthPixels = FALSE;
+				IPPU.RenderedScreenWidth = SNES_WIDTH;
+			}
+
+			if (Settings.SupportHiRes && IPPU.Interlace)
+			{
+				GFX.PPL = GFX.RealPPL << 1;
+				IPPU.DoubleHeightPixels = TRUE;
+				IPPU.RenderedScreenHeight = PPU.ScreenHeight << 1;
+				GFX.DoInterlace++;
+			}
+			else
+			{
+				GFX.PPL = GFX.RealPPL;
+				IPPU.DoubleHeightPixels = FALSE;
+				IPPU.RenderedScreenHeight = PPU.ScreenHeight;
+			}
+	 }
+
+    // reset runahead
+    runahead_skip = -runahead_speed;
+
+    return true;
 }
 
-bool8 S9xDeinitUpdate(int width, int height)
+static bool8 DrawFrame(int width, int height)
 {
-   // Apply Chrono Trigger Framehack
-   if (!Settings.DisableGameSpecificHacks && ChronoTriggerFrameHack && (height > SNES_HEIGHT))
+   // Apply Chrono Trigger Framehack -- force overscan off
+   if (!Settings.DisableGameSpecificHacks && ChronoTriggerFrameHack && (height > SNES_HEIGHT) && (crop_overscan_mode == 0))
       height = SNES_HEIGHT;
 
    if (crop_overscan_mode == 1) // enabled
@@ -1861,52 +1964,75 @@ bool8 S9xDeinitUpdate(int width, int height)
       }
    }
 
-	 if(blargg_filter)
-	 {
-		  if(blargg_filter==1)
-				 RenderBlarggNTSCMonochrome(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-		  else if(blargg_filter==2)
-				 RenderBlarggNTSCRf(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-		  else if(blargg_filter==3)
-				 RenderBlarggNTSCComposite(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-		  else if(blargg_filter==4)
-				 RenderBlarggNTSCSvideo(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-		  else if(blargg_filter==5)
-				 RenderBlarggNTSCRgb(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
-
-	    video_cb(gfx_blend, SNES_NTSC_OUT_WIDTH(256), height, GFX.Pitch);
-	 }
-	 else if(width==MAX_SNES_WIDTH && hires_blend)
+   if(blargg_filter)
    {
-		  if (hires_blend==3 && !special_hires_game)
-				video_cb(GFX.Screen, width, height, GFX.Pitch);
-			else
-			{
-		     RenderMergeHires(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height, hires_blend);
+      if(blargg_filter==1)
+         RenderBlarggNTSCMonochrome(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
+      else if(blargg_filter==2)
+         RenderBlarggNTSCRf(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
+      else if(blargg_filter==3)
+         RenderBlarggNTSCComposite(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
+      else if(blargg_filter==4)
+         RenderBlarggNTSCSvideo(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
+      else if(blargg_filter==5)
+         RenderBlarggNTSCRgb(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height);
 
-			   if (hires_blend==3)
-				    video_cb(gfx_blend, width/2, height, GFX.Pitch);
-			   else
-				    video_cb(gfx_blend, width, height, GFX.Pitch);
-			}
+      video_cb(gfx_blend, SNES_NTSC_OUT_WIDTH(256), height, GFX.Pitch);
+   }
+   else if(width==MAX_SNES_WIDTH && hires_blend)
+   {
+      if (hires_blend==3 && !special_hires_game)
+         video_cb(GFX.Screen, width, height, GFX.Pitch);
+      else
+      {
+         RenderMergeHires(GFX.Screen, GFX.Pitch, gfx_blend, GFX.Pitch, width, height, hires_blend);
+
+         if (hires_blend==3)
+            video_cb(gfx_blend, width/2, height, GFX.Pitch);
+         else
+            video_cb(gfx_blend, width, height, GFX.Pitch);
+      }
    }
    else
-   { 
+   {
       video_cb(GFX.Screen, width, height, GFX.Pitch);
    }
 
    return TRUE;
 }
 
+bool8 S9xDeinitUpdate(int width, int height)
+{
+   if (runahead_skip > 0) return TRUE;
+
+	 //if(log_cb) log_cb(RETRO_LOG_INFO,"normal %d %d\n", GFX.InterlaceFrame, Memory.FillRAM[0x213F]>>7);
+
+   if (GFX.DoInterlace && GFX.InterlaceFrame == 1)
+   {
+      if (interlace_speed == 2)
+         return TRUE;
+
+      // lufia 2 credits -- smooth interlace scroll
+      if(!Settings.DisableGameSpecificHacks && interlace_speed==0 && lufia2_credits_hack && PPU.BGMode==6)
+         return TRUE;
+   }
+
+   return DrawFrame(width, height);
+}
+
 bool8 S9xContinueUpdate(int width, int height)
 {
-	 if(interlace_speed==1) return TRUE;
+   if (runahead_skip > 0) return TRUE;
 
-   // scrolling credits interlace -- show whole frame
-   if(!Settings.DisableGameSpecificHacks && interlace_speed==0 && lufia2_credits_hack && PPU.BGMode==6)
-      return TRUE;
+	 //if(log_cb) log_cb(RETRO_LOG_INFO,"interlace %d %d\n", GFX.InterlaceFrame, Memory.FillRAM[0x213F]>>7);
 
-   return S9xDeinitUpdate(width, height);
+   if (GFX.DoInterlace && GFX.InterlaceFrame == 0)
+   {
+      if (interlace_speed == 1)
+         return TRUE;
+   }
+
+   return DrawFrame(width, height);
 }
 
 // Dummy functions that should probably be implemented correctly later.
