@@ -3,6 +3,16 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
+dropoff 4:
+- improved direct bsx game loading (no bios)
+- backport st010 accuracy fixes
+- backport interlace fixes (Air Strike Patrol, F1 ROC II)
+- clear interlace flicker on load state
+- correctly apply settings on load state
+- internal runahead interlace fixes (many)
+- show interlace frames: even, odd, both
+
+
 dropoff 3:
 - internal runahead feature (good speedup)
 - hires blending: disabled, half, full, special
