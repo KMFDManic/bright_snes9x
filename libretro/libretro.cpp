@@ -75,6 +75,7 @@ static uint8 audio_interp_custom[0x10000];
 
 static int blargg_filter = 0;
 int dsp1_chipset = 1;
+int chip_emulation = 1;
 static int interlace_speed = 0;
 static int runahead_speed = 0;
 static bool ignore_bios = false;
@@ -209,6 +210,7 @@ void retro_set_environment(retro_environment_t cb)
       { "snes9x_sndchan_7", "Enable sound channel 7; enabled|disabled" },
       { "snes9x_sndchan_8", "Enable sound channel 8; enabled|disabled" },
       { "snes9x_dsp1_chipset", "DSP-1 chipset; revision 1b|revision 1(a)" },
+      { "snes9x_chip_emulation", "Special chip emulation; Hardware|Software" },
       { "snes9x_vram_allow", "Allow invalid VRAM access (Unsafe); disabled|enabled" },
       { "snes9x_special_hacks", "Use special game hacks; enabled|disabled" },
       { "snes9x_interlace", "Show interlace frames; auto|even|odd|both" },
@@ -588,6 +590,16 @@ static void update_variables(void)
          dsp1_chipset = 0;
    }
 
+   var.key="snes9x_chip_emulation";
+   var.value=NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (strcmp(var.value, "Hardware") == 0)
+         chip_emulation = 1;
+      else if (strcmp(var.value, "Software") == 0)
+         chip_emulation = 0;
+   }
+	 
    var.key = "snes9x_interlace";
    var.value = NULL;
 
@@ -745,6 +757,8 @@ unsigned retro_api_version()
 void retro_reset()
 {
    S9xSoftReset();
+
+	 runahead_skip = -runahead_speed;
 }
 
 static unsigned snes_devices[2];
