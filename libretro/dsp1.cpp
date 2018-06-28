@@ -209,9 +209,12 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "libretro/libretro.h"
+extern retro_log_printf_t log_cb;
 
 #include "snes9x.h"
 #include "memmap.h"
+#include "necdsp.h"
 
 #ifdef DEBUGGER
 //#define DebugDSP1
@@ -1289,7 +1292,19 @@ static void DSP1_Op2F (void)
 }
 
 void DSP1SetByte (uint8 byte, uint16 address)
-{
+{	
+	if (necdsp_active)
+	{
+		if (address < DSP0.boundary)
+			necdsp_dr_write(byte);
+		else
+			necdsp_sr_write(byte);
+
+		necdsp_enter();
+		return;
+	}
+
+
 	if (address < DSP0.boundary)
 	{
 		if ((DSP1.command == 0x0A || DSP1.command == 0x1A) && DSP1.out_count != 0)
@@ -1487,8 +1502,7 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							DSP1.output[3] = (uint8) ((((int16) DSP1.Op08Lh) >> 8) & 0xFF);
 							break;
 
-						case 0x18: // Range
-
+						case 0x18: // Range							
 							DSP1.Op18X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 							DSP1.Op18Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 							DSP1.Op18Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
@@ -1502,7 +1516,6 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							break;
 
 						case 0x38: // Range
-
 							DSP1.Op38X = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
 							DSP1.Op38Y = (int16) (DSP1.parameters[2] | (DSP1.parameters[3] << 8));
 							DSP1.Op38Z = (int16) (DSP1.parameters[4] | (DSP1.parameters[5] << 8));
@@ -1643,7 +1656,7 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							DSP1.output[3] = (uint8) ((DSP1.Op0EY >> 8) & 0xFF);
 							break;
 
-							// Extra commands used by Pilot Wings
+						// Extra commands used by Pilot Wings
 						case 0x05:
 						case 0x35:
 						case 0x31:
@@ -1846,7 +1859,6 @@ void DSP1SetByte (uint8 byte, uint16 address)
 							DSP1.output[1] = (uint8) ((DSP1.Op2FSize >> 8) & 0xFF);
 							break;
 
-
 						case 0x07:
 						case 0x0F:
 							DSP1.Op0FRamsize = (int16) (DSP1.parameters[0] | (DSP1.parameters[1] << 8));
@@ -1870,6 +1882,18 @@ void DSP1SetByte (uint8 byte, uint16 address)
 uint8 DSP1GetByte (uint16 address)
 {
 	uint8	t;
+
+	if (necdsp_active)
+	{
+		if (address < DSP0.boundary)
+			t = necdsp_dr_read();
+		else
+			t = necdsp_sr_read();
+
+		necdsp_enter();
+		return t;
+	}
+
 
 	if (address < DSP0.boundary)
 	{
