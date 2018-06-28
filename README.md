@@ -3,6 +3,13 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
+dropoff 5:
+- add byuu's nec dsp chipset code (dsp1-4,st010-011)
+- add special chipset emulation: hardware, software
+- fixed default gaussian volume
+- fixed internal runahead soft reset
+
+
 dropoff 4:
 - improved direct bsx game loading (no bios)
 - backport st010 accuracy fixes
@@ -52,10 +59,14 @@ notes:
 
 - allow invalid vram access. This is useful for playing Europe in ntsc mode. Like Marko's Magic Football with copier protection disabled. Possibly Lucky Luke. World Masters Golf. And smoothing out some others. Or (old) translation hacks that don't work on real hardware. Plus newer hacks can abuse this feature and give lots of illegal speedup! And notably, this option breaks Hook gameplay.
 
-- internal runahead feature. runs faster. Kirby's Dream Land 3 ## 0: 188 ## 1: 93 (frontend) ==> 104 (secondary) ==> 121 (internal)
-  
+- internal runahead feature. runs faster. Kirby's Dream Land 3 ## 0: 188 ## 1: 93 (frontend) ==> 104 (secondary) ==> 121 (internal). Also fixes lightgun cursor.
+
 - hires blending special activates custom blending only for these games. extra compatible with lores scalers. Bishoujo Senshi Sailor Moon S - Kondo wa Puzzle de Oshioki yo, Kirby's Dream Land 3 / Hoshi no Kirby 3, Jurassic Park
 
-- there's a rough chance of dropoff4 coming out. But there's honestly not much left to be added. Interest is naturally low. Likely almost no one will find out about this build and I can keep it a secret!
+- memory randomization. Only Super Off Road seems to use it so far.
+
+- hardware chipset emulation. Name your files dsp1.bin, dsp1b.bin, dsp2.bin, dsp3.bin, dsp4.bin, st0010.bin, st0011.bin and place in Retroarch system folder.
+
+- there's a rough chance of dropoff6 coming out. But there's honestly not much left to be added. Interest is naturally low. Likely almost no one will find out about this build and I can keep it a secret!
 
 - if you actually enjoy using this win32 snes9x port, then erm. Thanks! And it's alright if you don't like/want/accept/use any of these features. They are leftovers and not intended for mainstream libretro community consumption.
