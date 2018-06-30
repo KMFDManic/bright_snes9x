@@ -3,8 +3,12 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
+dropoff 6:
+- add byuu's cx4 hitachi dsp chipset code
+
+
 dropoff 5:
-- add byuu's nec dsp chipset code (dsp1-4,st010-011)
+- add byuu's nec dsp chipset code (dsp1-4, st010-011)
 - add special chipset emulation: hardware, software
 - fixed default gaussian volume
 - fixed internal runahead soft reset
@@ -65,7 +69,7 @@ notes:
 
 - memory randomization. Only Super Off Road seems to use it so far.
 
-- hardware chipset emulation. Name your files dsp1.bin, dsp1b.bin, dsp2.bin, dsp3.bin, dsp4.bin, st0010.bin, st0011.bin and place in Retroarch system folder.
+- hardware chipset emulation. Name your BIOS files dsp1.bin, dsp1b.bin, dsp2.bin, dsp3.bin, dsp4.bin, st0010.bin, st0011.bin, cx4.bin and place in Retroarch system folder.
 
 - there's a rough chance of dropoff6 coming out. But there's honestly not much left to be added. Interest is naturally low. Likely almost no one will find out about this build and I can keep it a secret!
 
