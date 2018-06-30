@@ -3,13 +3,13 @@
 sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experimental features (meant for having fun only!!) -      ideally not recommended for upstream core inclusion (seriously, it's going to be messy clutter!)
 
 
-dropoff 6:
+dropoff 6 preview:
 - add byuu's cx4 hitachi dsp chipset code
 
 
 dropoff 5:
 - add byuu's nec dsp chipset code (dsp1-4, st010-011)
-- add special chipset emulation: hardware, software
+- add special chipset emulation: hardware (LLE), software (HLE)
 - fixed default gaussian volume
 - fixed internal runahead soft reset
 
