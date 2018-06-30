@@ -4,7 +4,7 @@ sandbox of www.github.com/libretro/snes9x (pre-1.56 rebase) for testing experime
 
 
 dropoff 6 preview:
-- add byuu's cx4 hitachi dsp chipset code
+- add byuu's hitachi dsp chipset code (cx4)
 
 
 dropoff 5:
