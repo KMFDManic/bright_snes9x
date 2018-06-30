@@ -114,6 +114,8 @@ struct Regs {
   uint16 dataRAM_i[2048];
 } regs;
 
+
+#if 0
 #include <stdio.h>
 #include <windows.h>
 #include <string.h>
@@ -377,6 +379,7 @@ void disassemble() {
 		fflush(fp);
 	}
 }
+#endif
 
 uint8 necdsp_sr_read() {
   return regs.sr >> 8;
