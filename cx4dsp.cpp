@@ -10,6 +10,13 @@ extern retro_log_printf_t log_cb;
 #include "necdsp.h"
 #include "dsp.h"
 
+#ifdef WINDOWS
+typedef __int64          Long64_t;  //Portable signed long integer 8 bytes
+typedef unsigned __int64 ULong64_t; //Portable unsigned long integer 8 bytes
+#else
+typedef long long          Long64_t; //Portable signed long integer 8 bytes
+typedef unsigned long long ULong64_t;//Portable unsigned long integer 8 byte
+#endif
 
 #define uint8 unsigned char
 #define uint16 unsigned short
@@ -461,8 +468,8 @@ static void cx4_instruction() {
   else if(op_fb00 == 0x9800) {
     //1001 1.00 .... ....
     //mul a,ri
-    __int64 x = INT24(regs.a);
-    __int64 y = INT24(cx4_ri());
+    Long64_t x = INT24(regs.a);
+    Long64_t y = INT24(cx4_ri());
     x *= y;
     regs.accl = UINT24(x >>  0ull);
     regs.acch = UINT24(x >> 24ull);
