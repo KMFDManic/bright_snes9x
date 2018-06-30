@@ -882,6 +882,8 @@ void necdsp_load()
 	if (necdsp_active)
 	{
 		power(necdsp_chipset);
+
+		if(log_cb) log_cb(RETRO_LOG_INFO,"NEC dsp hardware started\n");
 	}
 }
 
