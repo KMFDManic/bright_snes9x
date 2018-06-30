@@ -30,15 +30,15 @@ typedef unsigned long long ULong64_t;//Portable unsigned long integer 8 byte
 #define UINT24(a) ((a) & 0xffffff)
 #define INT24(a) ((((int)(a))<<8)>>8)
 
-uint8 dataROM[0xc00];
-uint8 *dataRAM;
+static uint8 dataROM[0xc00];
+static uint8 *dataRAM;
  
-uint24 cx4_stack[8];
-uint16 cx4_opcode;
+static uint24 cx4_stack[8];
+static uint16 cx4_opcode;
 
-uint24 cx4_programOffset;
-uint16 cx4_pageNumber;
-uint32 cx4_programCounter;
+static uint24 cx4_programOffset;
+static uint16 cx4_pageNumber;
+static uint32 cx4_programCounter;
 
 bool cx4dsp_active;
 

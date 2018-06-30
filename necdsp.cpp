@@ -45,21 +45,22 @@ extern retro_log_printf_t log_cb;
 
 		
 enum Revision { uPD7725, uPD96050 };
-unsigned drmask, drtest;
-unsigned srmask, srtest;
-unsigned dpmask, dptest;
+static unsigned drmask, drtest;
+static unsigned srmask, srtest;
+static unsigned dpmask, dptest;
+
+static unsigned necdsp_chipset;
+static unsigned int necdsp_revision;
+
+static uint8 programROM[16384*3];
+static uint16 dataROM[2048];
+static uint16 *dataRAM;
+
+static unsigned int programROMSize;
+static unsigned int dataROMSize;
+static unsigned int dataRAMSize;
 
 bool necdsp_active;
-unsigned necdsp_chipset;
-unsigned int necdsp_revision;
-
-uint8 programROM[16384*3];
-uint16 dataROM[2048];
-uint16 *dataRAM;
-
-unsigned int programROMSize;
-unsigned int dataROMSize;
-unsigned int dataRAMSize;
 
 struct Flag {
   bool s1, s0, c, z, ov1, ov0;
@@ -91,7 +92,7 @@ struct Status {
   }
 };
 
-struct Regs {
+static struct Regs {
   uint16 stack[16];  //LIFO
   varuint pc;        //program counter
   varuint rp;        //ROM pointer
