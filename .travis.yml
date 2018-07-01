@@ -13,6 +13,16 @@ env:
     - CORE=snes9x
     - COMPILER_NAME=gcc CXX=g++-7 CC=gcc-7
   matrix:
+    - PLATFORM=armv
+    - PLATFORM=rpi
+    - PLATFORM=osx
+    - PLATFORM=ios
+    - PLATFORM=xenon
+    - PLATFORM=windows_msvc2003_x86
+    - PLATFORM=windows_msvc2005_x86
+    - PLATFORM=windows_msvc2010_x86
+    - PLATFORM=windows_msvc2017_desktop
+    - PLATFORM=vita
     - PLATFORM=linux_x64
     - PLATFORM=ngc
     - PLATFORM=wii
