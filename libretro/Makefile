@@ -9,6 +9,9 @@ BACKSLASH := \$(BACKSLASH)
 filter_out1 = $(filter-out $(firstword $1),$1)
 filter_out2 = $(call filter_out1,$(call filter_out1,$1))
 
+CFLAGS += -std=gnu99
+CXXFLAGS += -std=gnu++11
+
 ifeq ($(platform),)
    platform = unix
    ifeq ($(shell uname -s),)
@@ -30,7 +33,7 @@ else ifneq (,$(findstring rpi,$(platform)))
    override platform += unix
 endif
 
-TARGET_NAME	= snes9x
+TARGET_NAME	= snes9x_bright
 
 LIBS     =
 
@@ -53,7 +56,7 @@ ifneq (,$(findstring unix,$(platform)))
    TARGET := $(TARGET_NAME)_libretro.so
    fpic := -fPIC
    ifneq ($(findstring SunOS,$(shell uname -a)),)
-   CC = gcc
+#   CC = gcc
    SHARED := -shared -z defs
    else
    SHARED := -shared -Wl,--version-script=link.T
@@ -449,8 +452,8 @@ ifeq ($(DEBUG), 1)
       CXXFLAGS += -O0 -g -DDEBUG
    endif
 else
-   CFLAGS += -O2 -DNDEBUG
-   CXXFLAGS += -O2 -DNDEBUG
+   CFLAGS += -Ofast -DNDEBUG
+   CXXFLAGS += -Ofast -DNDEBUG
 
    ifneq (,$(findstring msvc,$(platform)))
       ifeq ($(STATIC_LINKING),1)
